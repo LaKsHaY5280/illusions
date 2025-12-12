@@ -290,7 +290,7 @@ export default function GamePage() {
 
   if (!currentPoll) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-lg">Loading game...</p>
@@ -300,7 +300,7 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
+    <div className="min-h-screen bg-linear-to-br from-purple-900 via-blue-900 to-indigo-900 text-white">
       {/* Reconnection Banner */}
       {showReconnecting && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-red-500 text-white text-center py-2 text-sm">
@@ -348,10 +348,10 @@ export default function GamePage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr,1fr] gap-4 sm:gap-8">
+        <div className="flex justify-between items-center gap-4 sm:gap-8">
           {/* Left Side - Illusion Image */}
-          <div className="flex flex-col order-1 lg:order-1">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 flex flex-col h-[300px] sm:h-[400px] lg:h-[calc(100vh-180px)]">
+          <div className="flex flex-col order-1 lg:order-1 w-1/2">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 flex flex-col h-75 sm:h-100 lg:h-[calc(100vh-180px)]">
               <h2 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4 truncate">
                 {currentPoll.title}
               </h2>
@@ -392,8 +392,8 @@ export default function GamePage() {
           </div>
 
           {/* Right Side - Polling Interface */}
-          <div className="flex flex-col order-2 lg:order-2">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 flex flex-col min-h-[400px] lg:h-[calc(100vh-180px)]">
+          <div className="flex flex-col order-2 lg:order-2 w-1/2">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/20 flex flex-col min-h-100 lg:h-[calc(100vh-180px)]">
               {/* Question */}
               <div className="mb-4 sm:mb-6">
                 <h3 className="text-lg sm:text-2xl font-semibold mb-2 leading-tight">
@@ -461,42 +461,84 @@ export default function GamePage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="space-y-2 sm:space-y-3"
+                      className="space-y-3 sm:space-y-4"
                     >
-                      {currentPoll.options.map((option, index) => (
-                        <motion.button
-                          key={option}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          onClick={() => handleVote(option)}
-                          disabled={!!userVote}
-                          className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl text-left font-semibold text-sm sm:text-base transition-all touch-manipulation ${
-                            userVote === option
-                              ? "bg-green-500 text-white ring-2 ring-green-300"
-                              : userVote
-                              ? "bg-white/5 text-gray-400 cursor-not-allowed"
-                              : "bg-white/20 hover:bg-white/30 active:bg-white/40 hover:scale-[1.02]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <span className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm">
-                              {String.fromCharCode(65 + index)}
-                            </span>
-                            <span className="flex-1">{option}</span>
-                            {userVote === option && (
-                              <span className="text-lg sm:text-xl">✓</span>
-                            )}
-                          </div>
-                        </motion.button>
-                      ))}
+                      {currentPoll.options.map((option, index) => {
+                        const percentage = getPercentage(option);
+                        const voteCount = votes[option] || 0;
+                        const isUserChoice = userVote === option;
+
+                        return (
+                          <motion.div
+                            key={option}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="relative"
+                          >
+                            <button
+                              onClick={() => handleVote(option)}
+                              disabled={!!userVote}
+                              className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl text-left font-semibold text-sm sm:text-base transition-all touch-manipulation relative overflow-hidden ${
+                                isUserChoice
+                                  ? "ring-2 ring-green-400"
+                                  : userVote
+                                  ? "cursor-not-allowed"
+                                  : "hover:scale-[1.02]"
+                              }`}
+                            >
+                              {/* Animated background bar */}
+                              <motion.div
+                                className={`absolute inset-0 ${
+                                  isUserChoice
+                                    ? "bg-green-500/40"
+                                    : "bg-white/20"
+                                }`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${percentage}%` }}
+                                transition={{
+                                  duration: 0.5,
+                                  ease: "easeOut",
+                                }}
+                              />
+
+                              {/* Content */}
+                              <div className="relative z-10 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                  <span className="shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/30 flex items-center justify-center text-xs sm:text-sm">
+                                    {String.fromCharCode(65 + index)}
+                                  </span>
+                                  <span className="flex-1 truncate">
+                                    {option}
+                                  </span>
+                                  {isUserChoice && (
+                                    <span className="text-base sm:text-xl text-green-300">
+                                      ✓
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <div className="text-base sm:text-lg font-bold">
+                                    {percentage}%
+                                  </div>
+                                  <div className="text-xs text-gray-300">
+                                    {voteCount}{" "}
+                                    {voteCount === 1 ? "vote" : "votes"}
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          </motion.div>
+                        );
+                      })}
                       {userVote && (
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           className="text-center text-xs sm:text-sm text-green-300 mt-4"
                         >
-                          ✓ Your vote has been recorded!
+                          ✓ Your vote has been recorded! Watch the live results
+                          update.
                         </motion.p>
                       )}
                     </motion.div>
@@ -532,9 +574,7 @@ export default function GamePage() {
                           >
                             <motion.div
                               className={`absolute inset-0 ${
-                                isCorrect
-                                  ? "bg-green-500/30"
-                                  : "bg-white/10"
+                                isCorrect ? "bg-green-500/30" : "bg-white/10"
                               }`}
                               initial={{ width: 0 }}
                               animate={{ width: `${percentage}%` }}
@@ -547,14 +587,16 @@ export default function GamePage() {
                             <div className="relative z-10">
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <span className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold">
+                                  <span className="shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold">
                                     {String.fromCharCode(65 + index)}
                                   </span>
                                   <span className="font-semibold truncate text-sm sm:text-base">
                                     {option}
                                   </span>
                                   {isCorrect && (
-                                    <span className="text-base sm:text-xl">✓</span>
+                                    <span className="text-base sm:text-xl">
+                                      ✓
+                                    </span>
                                   )}
                                   {isUserChoice && !isCorrect && (
                                     <span className="text-xs sm:text-sm text-blue-300">
@@ -562,12 +604,13 @@ export default function GamePage() {
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-right flex-shrink-0">
+                                <div className="text-right shrink-0">
                                   <div className="text-lg sm:text-2xl font-bold">
                                     {percentage}%
                                   </div>
                                   <div className="text-xs text-gray-300">
-                                    {voteCount} {voteCount === 1 ? "vote" : "votes"}
+                                    {voteCount}{" "}
+                                    {voteCount === 1 ? "vote" : "votes"}
                                   </div>
                                 </div>
                               </div>
@@ -641,8 +684,8 @@ export default function GamePage() {
               {/* Total Votes Display */}
               {totalVotes > 0 && (
                 <div className="mt-3 sm:mt-4 text-center text-xs sm:text-sm text-gray-300">
-                  {totalVotes} {totalVotes === 1 ? "participant" : "participants"}{" "}
-                  voted
+                  {totalVotes}{" "}
+                  {totalVotes === 1 ? "participant" : "participants"} voted
                 </div>
               )}
             </div>
