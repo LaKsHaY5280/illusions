@@ -25,6 +25,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const socketInstance = io({
       path: "/socket.io",
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      transports: ["websocket", "polling"], // Fallback to polling for better compatibility
     });
 
     socketInstance.on("connect", () => {
@@ -38,9 +44,24 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setUserId(data.userId);
     });
 
-    socketInstance.on("disconnect", () => {
-      console.log("Socket disconnected");
+    socketInstance.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
       setIsConnected(false);
+    });
+
+    socketInstance.on("reconnect", (attemptNumber) => {
+      console.log("Reconnected after", attemptNumber, "attempts");
+      setIsConnected(true);
+      // Request current game state after reconnection
+      socketInstance.emit("request-state");
+    });
+
+    socketInstance.on("reconnect_error", (error) => {
+      console.error("Reconnection error:", error);
+    });
+
+    socketInstance.on("reconnect_failed", () => {
+      console.error("Failed to reconnect after all attempts");
     });
 
     setSocket(socketInstance);

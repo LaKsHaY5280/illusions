@@ -16,6 +16,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Optical Illusions - Live Polling Game",
   description: "Interactive optical illusions game with live polling",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: "cover",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Optical Illusions",
+  },
+  themeColor: "#4c1d95",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

@@ -11,6 +11,12 @@ const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
 
 const pollStates = new Map();
+const gameState = {
+  currentPollId: null,
+  currentPhase: "waiting",
+  timerEndTime: null,
+  isActive: false,
+};
 
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
@@ -37,6 +43,18 @@ app.prepare().then(() => {
     socket.on("join-game", () => {
       console.log(`User joined game: ${socket.id}`);
       socket.emit("connected", { userId: socket.id });
+
+      // Send current game state to newly joined user
+      if (gameState.currentPollId) {
+        const pollState = pollStates.get(gameState.currentPollId);
+        socket.emit("game-state-sync", {
+          pollId: gameState.currentPollId,
+          phase: gameState.currentPhase,
+          votes: pollState ? pollState.votes : {},
+          totalVotes: pollState ? pollState.totalVotes : 0,
+          timerEndTime: gameState.timerEndTime,
+        });
+      }
     });
 
     socket.on("start-poll", (data) => {
@@ -54,6 +72,10 @@ app.prepare().then(() => {
         voters: new Set(),
         isActive: true,
       });
+
+      gameState.currentPollId = pollId;
+      gameState.currentPhase = "voting";
+      gameState.isActive = true;
 
       console.log(`Poll started: ${pollId}`);
       io.emit("poll-started", { pollId, options });
@@ -103,6 +125,7 @@ app.prepare().then(() => {
 
       if (pollState) {
         pollState.isActive = false;
+        gameState.currentPhase = "revealing";
         console.log(`Poll closed: ${pollId}`);
 
         io.emit("poll-closed", {
@@ -131,6 +154,27 @@ app.prepare().then(() => {
       pollStates.delete(pollId);
       console.log(`Poll reset: ${pollId}`);
       io.emit("poll-reset", { pollId });
+    });
+
+    socket.on("phase-change", (data) => {
+      const { pollId, phase } = data;
+      gameState.currentPhase = phase;
+      gameState.currentPollId = pollId;
+      console.log(`Phase changed to: ${phase} for poll ${pollId}`);
+      io.emit("phase-update", { pollId, phase });
+    });
+
+    socket.on("request-state", () => {
+      if (gameState.currentPollId) {
+        const pollState = pollStates.get(gameState.currentPollId);
+        socket.emit("game-state-sync", {
+          pollId: gameState.currentPollId,
+          phase: gameState.currentPhase,
+          votes: pollState ? pollState.votes : {},
+          totalVotes: pollState ? pollState.totalVotes : 0,
+          timerEndTime: gameState.timerEndTime,
+        });
+      }
     });
 
     socket.on("disconnect", () => {
