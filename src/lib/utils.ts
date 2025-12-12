@@ -167,16 +167,18 @@ export const getNetworkQuality = (): "fast" | "slow" | "offline" => {
     return "offline";
   }
 
-  // @ts-ignore - experimental API
-  const connection =
-    navigator.connection ||
-    navigator.mozConnection ||
-    navigator.webkitConnection;
+  try {
+    // Use type assertion for experimental API
+    const nav = navigator as any;
+    const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
 
-  if (connection) {
-    const effectiveType = connection.effectiveType;
-    if (effectiveType === "4g") return "fast";
-    if (effectiveType === "3g" || effectiveType === "2g") return "slow";
+    if (connection && connection.effectiveType) {
+      const effectiveType = connection.effectiveType;
+      if (effectiveType === "4g") return "fast";
+      if (effectiveType === "3g" || effectiveType === "2g") return "slow";
+    }
+  } catch (error) {
+    // Silently fail if API not available
   }
 
   return "fast"; // Default to fast if can't determine
